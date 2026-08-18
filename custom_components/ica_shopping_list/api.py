@@ -19,6 +19,7 @@ throwaway soak harness built for the purpose. The three that shape this module:
 
 from __future__ import annotations
 
+import json
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -284,9 +285,18 @@ class Ica:
                     raise IcaAuthRequired(f"ICA refused the token (HTTP {response.status})")
                 if response.status >= 400:
                     raise IcaError(f"ICA answered HTTP {response.status} for {method} {path}")
-                if response.content_length == 0:
-                    return None                      # DELETE says nothing
-                return await response.json(content_type=None)
+                # Read the body rather than trusting Content-Length: it is
+                # absent on a chunked response, and a DELETE answers 200 with
+                # nothing at all, which is a success and not a parse failure.
+                body = (await response.text()).strip()
+                if not body:
+                    return None
+                try:
+                    return json.loads(body)
+                except ValueError as err:
+                    raise IcaUnexpectedResponse(
+                        f"ICA answered {method} {path} with something that is not "
+                        f"JSON") from err
         except aiohttp.ClientError as err:
             raise IcaError(f"Could not reach ICA: {err}") from err
 
