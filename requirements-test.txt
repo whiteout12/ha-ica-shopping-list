@@ -1,7 +1,3 @@
-# Ships a Home Assistant with it, for the tests that need one.
-pytest-homeassistant-custom-component
-
-# api.py has no Home Assistant in it, so its tests mock at the aiohttp layer
-# instead of borrowing HA's client fixture — which would mean starting a Home
-# Assistant to test a module that never imports one.
+# api.py has no Home Assistant in it, so its tests mock at the aiohttp layer.
 aioresponses
+pytest-asyncio

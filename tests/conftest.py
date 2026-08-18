@@ -2,20 +2,10 @@
 
 Nothing here uses a real account id, household id or list uuid — this repo is
 public, and the soak harness that produced the real ones is not.
+
+There is deliberately no Home Assistant test harness loaded. Every test so far
+covers api.py, which does not import Home Assistant, and merely registering the
+plugin starts a Home Assistant thread that outlives its own cleanup check —
+failing a suite in which everything passed. It comes back with the first config
+flow or coordinator test, which will genuinely need it.
 """
-
-import pytest
-
-pytest_plugins = "pytest_homeassistant_custom_component"
-
-
-@pytest.fixture
-def custom_integration(enable_custom_integrations):
-    """Let Home Assistant load this integration.
-
-    Deliberately not autouse. It drags a whole Home Assistant into every test
-    that requests it, and api.py has no Home Assistant in it — making this
-    automatic started HA for tests that never needed it, and left one of its
-    threads running past the cleanup check.
-    """
-    yield
