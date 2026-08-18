@@ -1,5 +1,7 @@
-# Unpinned on purpose: this plugin ships a specific Home Assistant with it, and
-# pinning an old one left Home Assistant's own shutdown thread running past the
-# cleanup check — a failure that said nothing about this integration. Tracking
-# the current release keeps the tests honest about the HA people actually run.
+# Ships a Home Assistant with it, for the tests that need one.
 pytest-homeassistant-custom-component
+
+# api.py has no Home Assistant in it, so its tests mock at the aiohttp layer
+# instead of borrowing HA's client fixture — which would mean starting a Home
+# Assistant to test a module that never imports one.
+aioresponses
