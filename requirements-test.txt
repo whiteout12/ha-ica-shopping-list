@@ -1,3 +1,11 @@
-# api.py has no Home Assistant in it, so its tests mock at the aiohttp layer.
+# Home Assistant itself, because importing custom_components.ica_shopping_list
+# runs the package __init__, which imports it — api.py is free of it, the import
+# path is not.
+homeassistant
+
+# Not pytest-homeassistant-custom-component: registering that plugin starts a
+# Home Assistant thread that outlives its own cleanup check. HA importable is
+# what these tests need; HA's test harness is not, until something tests a
+# config flow or a coordinator.
 aioresponses
 pytest-asyncio
