@@ -1,12 +1,14 @@
 {
   "domain": "ica_shopping_list",
   "name": "ICA Shopping List",
-  "codeowners": ["@whiteout12"],
+  "codeowners": [
+    "@whiteout12"
+  ],
   "config_flow": true,
   "documentation": "https://github.com/whiteout12/ha-ica-shopping-list",
   "integration_type": "service",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/whiteout12/ha-ica-shopping-list/issues",
   "requirements": [],
-  "version": "0.1.0"
+  "version": "0.1.1"
 }
