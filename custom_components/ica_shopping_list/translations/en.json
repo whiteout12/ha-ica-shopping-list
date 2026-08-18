@@ -3,20 +3,23 @@
     "step": {
       "user": {
         "title": "Connect to ICA",
-        "description": "Sign in with the same email and password you use at ica.se.",
+        "description": "Sign in with the personal identity number and password you use at ica.se.",
         "data": {
-          "username": "Email",
+          "username": "Personal identity number",
           "password": "Password",
           "save_password": "Save the password"
         },
         "data_description": {
-          "save_password": "Lets Home Assistant sign in again by itself when your ICA session ends. Without it you will be asked for the password each time that happens."
+          "save_password": "Lets Home Assistant sign in again by itself when your ICA session ends. Without it you will be asked for the password each time that happens.",
+          "username": "Twelve digits, YYYYMMDDNNNN. A hyphen or spaces are fine — they are removed."
         }
       },
       "lists": {
         "title": "Choose lists",
         "description": "Each list you pick becomes its own to-do list in Home Assistant. You can change this later.",
-        "data": { "lists": "Lists" }
+        "data": {
+          "lists": "Lists"
+        }
       },
       "reauth_confirm": {
         "title": "Sign in to ICA again",
@@ -31,8 +34,9 @@
       }
     },
     "error": {
-      "invalid_auth": "ICA did not accept that email and password.",
-      "cannot_connect": "Could not reach ICA."
+      "invalid_auth": "ICA did not accept that personal identity number and password.",
+      "cannot_connect": "Could not reach ICA.",
+      "unexpected_response": "ICA answered something unexpected — its sign-in page may have changed. Check the log for what was seen."
     },
     "abort": {
       "already_configured": "That ICA account is already set up.",
@@ -44,7 +48,9 @@
       "init": {
         "title": "Choose lists",
         "description": "Lists created in ICA since setup appear here. Unticking one removes its to-do list from Home Assistant but leaves the list untouched at ICA.",
-        "data": { "lists": "Lists" }
+        "data": {
+          "lists": "Lists"
+        }
       }
     }
   }

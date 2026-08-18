@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import aiohttp
 import voluptuous as vol
 
 from homeassistant.config_entries import (
@@ -26,7 +27,13 @@ from homeassistant.helpers.selector import (
     SelectSelectorMode,
 )
 
-from .api import Ica, IcaCredentialsRejected, IcaError, IcaList
+from .api import (
+    Ica,
+    IcaCredentialsRejected,
+    IcaError,
+    IcaList,
+    IcaUnexpectedResponse,
+)
 from .const import CONF_COOKIES, CONF_LISTS, CONF_SAVE_PASSWORD, DOMAIN
 
 CREDENTIALS_SCHEMA = vol.Schema({
@@ -36,11 +43,21 @@ CREDENTIALS_SCHEMA = vol.Schema({
 })
 
 
+def normalise_username(value: str) -> str:
+    """ICA wants a personal identity number, YYYYMMDDNNNN.
+
+    People type it with a hyphen or spaces because that is how it is written
+    everywhere else, and ICA does not accept those. Stripping them here is the
+    difference between "it works" and "ICA did not accept that".
+    """
+    return "".join(ch for ch in (value or "") if ch.isdigit())
+
+
 async def _sign_in(hass, username: str, password: str) -> tuple[Ica, list[IcaList]]:
     """Log in and read the lists, so setup fails now rather than later."""
-    # A private cookie jar: these cookies are a live credential and have no
-    # business in the session other integrations share.
-    session = async_create_clientsession(hass)
+    # An explicit cookie jar. These cookies *are* the session, and Home
+    # Assistant's session helper makes no promise about keeping them.
+    session = async_create_clientsession(hass, cookie_jar=aiohttp.CookieJar())
     api = Ica(session)
     await api.login(username, password)
     return api, await api.lists()
@@ -62,16 +79,19 @@ class IcaConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
         if user_input is not None:
             try:
+                username = normalise_username(user_input[CONF_USERNAME])
                 self._api, self._lists = await _sign_in(
-                    self.hass, user_input[CONF_USERNAME], user_input[CONF_PASSWORD])
+                    self.hass, username, user_input[CONF_PASSWORD])
             except IcaCredentialsRejected:
                 errors["base"] = "invalid_auth"
+            except IcaUnexpectedResponse:
+                errors["base"] = "unexpected_response"
             except IcaError:
                 errors["base"] = "cannot_connect"
             else:
-                await self.async_set_unique_id(user_input[CONF_USERNAME].lower())
+                await self.async_set_unique_id(username)
                 self._abort_if_unique_id_configured()
-                self._credentials = dict(user_input)
+                self._credentials = {**user_input, CONF_USERNAME: username}
                 return await self.async_step_lists()
 
         return self.async_show_form(
@@ -127,6 +147,8 @@ class IcaConfigFlow(ConfigFlow, domain=DOMAIN):
                                         user_input[CONF_PASSWORD])
             except IcaCredentialsRejected:
                 errors["base"] = "invalid_auth"
+            except IcaUnexpectedResponse:
+                errors["base"] = "unexpected_response"
             except IcaError:
                 errors["base"] = "cannot_connect"
             else:

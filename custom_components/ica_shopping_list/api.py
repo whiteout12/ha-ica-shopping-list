@@ -52,6 +52,15 @@ class IcaError(Exception):
     """ICA could not be reached, or answered something unusable."""
 
 
+class IcaUnexpectedResponse(IcaError):
+    """ICA was reached and answered something this code does not understand.
+
+    Kept apart from a transport failure on purpose. "Could not reach ICA" sent
+    somebody looking at their network when the real answer was that the login
+    form had changed, or that the session cookie never arrived.
+    """
+
+
 class IcaAuthRequired(IcaError):
     """The session is gone and only a password can get a new one."""
 
@@ -174,7 +183,7 @@ class Ica:
         form = _FormParser()
         form.feed(form_html)
         if "password" not in form.fields:
-            raise IcaError(
+            raise IcaUnexpectedResponse(
                 f"ICA's login form has changed: expected a password field, saw "
                 f"{sorted(form.fields) or 'none'}"
             )
@@ -188,12 +197,16 @@ class Ica:
         grant = _FormParser()
         grant.feed(grant_html)
         if "token" not in grant.fields:
-            raise IcaCredentialsRejected("ICA rejected the email or password.")
+            raise IcaCredentialsRejected(
+                "ICA did not accept that personal identity number or password.")
 
         await self._post(f"{IDP_URL}{grant.action or AUTHORIZE_PATH}", data=grant.fields)
 
         if not any(m.key == COOKIE_NAME for m in self._session.cookie_jar):
-            raise IcaError("Logged in, but ICA set no session cookie.")
+            raise IcaUnexpectedResponse(
+                "Signed in, but no ICA session cookie was kept. The session this "
+                "was given is not storing cookies."
+            )
         self._token = self._token_expires = None
 
     async def token(self) -> str:

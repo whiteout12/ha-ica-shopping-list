@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import aiohttp
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
@@ -15,9 +17,9 @@ PLATFORMS = [Platform.TODO]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    # A cookie jar of its own. These cookies are a live ICA credential, and
-    # Home Assistant's shared session is shared with everything else.
-    api = Ica(async_create_clientsession(hass))
+    # An explicit cookie jar of its own. These cookies *are* the ICA session,
+    # and Home Assistant's shared session is shared with everything else.
+    api = Ica(async_create_clientsession(hass, cookie_jar=aiohttp.CookieJar()))
     coordinator = IcaCoordinator(hass, entry, api)
     await coordinator.async_restore_session()
 

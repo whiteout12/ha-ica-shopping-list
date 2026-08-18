@@ -3,20 +3,23 @@
     "step": {
       "user": {
         "title": "Anslut till ICA",
-        "description": "Logga in med samma e-post och lösenord som på ica.se.",
+        "description": "Logga in med personnumret och lösenordet du använder på ica.se.",
         "data": {
-          "username": "E-post",
+          "username": "Personnummer",
           "password": "Lösenord",
           "save_password": "Spara lösenordet"
         },
         "data_description": {
-          "save_password": "Låter Home Assistant logga in igen på egen hand när ICA-sessionen tar slut. Utan det får du ange lösenordet varje gång det händer."
+          "save_password": "Låter Home Assistant logga in igen på egen hand när ICA-sessionen tar slut. Utan det får du ange lösenordet varje gång det händer.",
+          "username": "Tolv siffror, ååååmmddnnnn. Bindestreck och mellanslag går bra — de tas bort."
         }
       },
       "lists": {
         "title": "Välj listor",
         "description": "Varje lista du väljer blir en egen att göra-lista i Home Assistant. Du kan ändra detta senare.",
-        "data": { "lists": "Listor" }
+        "data": {
+          "lists": "Listor"
+        }
       },
       "reauth_confirm": {
         "title": "Logga in på ICA igen",
@@ -31,8 +34,9 @@
       }
     },
     "error": {
-      "invalid_auth": "ICA godtog inte e-postadressen och lösenordet.",
-      "cannot_connect": "Kunde inte nå ICA."
+      "invalid_auth": "ICA godtog inte personnumret och lösenordet.",
+      "cannot_connect": "Kunde inte nå ICA.",
+      "unexpected_response": "ICA svarade något oväntat — inloggningssidan kan ha ändrats. Se loggen för vad som togs emot."
     },
     "abort": {
       "already_configured": "Det ICA-kontot är redan tillagt.",
@@ -44,7 +48,9 @@
       "init": {
         "title": "Välj listor",
         "description": "Listor som skapats i ICA sedan installationen dyker upp här. Avmarkerar du en försvinner att göra-listan från Home Assistant, men listan finns kvar hos ICA.",
-        "data": { "lists": "Listor" }
+        "data": {
+          "lists": "Listor"
+        }
       }
     }
   }

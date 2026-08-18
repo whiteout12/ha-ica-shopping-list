@@ -13,7 +13,9 @@ Unofficial, and not affiliated with ICA.
 install it, restart Home Assistant, then **Settings → Devices & services → Add
 integration → ICA Shopping List**.
 
-Setup asks for your ica.se email and password, then shows your lists so you can
+Setup asks for your ica.se **personal identity number** (`YYYYMMDDNNNN`) and
+password — the same ones you sign in with at ica.se, not an email address — then
+shows your lists so you can
 pick which ones become to-do entities. You can change that selection any time
 under **Configure**, and lists created in ICA later appear there.
 

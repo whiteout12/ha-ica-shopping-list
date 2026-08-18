@@ -8,7 +8,7 @@ which is why they are pinned here rather than left as comments.
 from __future__ import annotations
 
 import pytest
-from aiohttp import ClientSession
+from homeassistant.helpers.aiohttp_client import async_create_clientsession
 
 from custom_components.ica_shopping_list.api import (
     BASE_URL,
@@ -30,48 +30,43 @@ def _info(login_state: int, token: str | None = TOKEN) -> dict:
     return payload
 
 
-async def test_a_live_session_yields_a_token(aioclient_mock) -> None:
+async def test_a_live_session_yields_a_token(hass, aioclient_mock) -> None:
     aioclient_mock.get(INFO, json=_info(1))
-    async with ClientSession() as session:
-        assert await Ica(session).token() == TOKEN
+    assert await Ica(async_create_clientsession(hass)).token() == TOKEN
 
 
-async def test_login_state_two_is_a_live_session(aioclient_mock) -> None:
+async def test_login_state_two_is_a_live_session(hass, aioclient_mock) -> None:
     """A password login in a browser profile that already held a session reports
     2, browses its own lists, and is in every way working. Requiring 1 rejected
     real sessions."""
     aioclient_mock.get(INFO, json=_info(2))
-    async with ClientSession() as session:
-        assert await Ica(session).token() == TOKEN
+    assert await Ica(async_create_clientsession(hass)).token() == TOKEN
 
 
-async def test_login_state_zero_is_dead_even_with_a_token(aioclient_mock) -> None:
+async def test_login_state_zero_is_dead_even_with_a_token(hass, aioclient_mock) -> None:
     """A dead session keeps handing out an accessToken, and that token 403s
     against the list API. Trusting the token alone resurrects dead sessions."""
     aioclient_mock.get(INFO, json=_info(0))
-    async with ClientSession() as session:
-        with pytest.raises(IcaAuthRequired):
-            await Ica(session).token()
+    with pytest.raises(IcaAuthRequired):
+        await Ica(async_create_clientsession(hass)).token()
 
 
-async def test_a_response_with_no_token_is_dead(aioclient_mock) -> None:
+async def test_a_response_with_no_token_is_dead(hass, aioclient_mock) -> None:
     aioclient_mock.get(INFO, json=_info(1, token=None))
-    async with ClientSession() as session:
-        with pytest.raises(IcaAuthRequired):
-            await Ica(session).token()
+    with pytest.raises(IcaAuthRequired):
+        await Ica(async_create_clientsession(hass)).token()
 
 
-async def test_a_rejected_token_asks_for_reauthentication(aioclient_mock) -> None:
+async def test_a_rejected_token_asks_for_reauthentication(hass, aioclient_mock) -> None:
     """403 from the list API means the session died under a token that was fine
     a minute ago — not a transport problem to retry forever."""
     aioclient_mock.get(INFO, json=_info(1))
     aioclient_mock.get(f"{LISTS_URL}/list/all", status=403)
-    async with ClientSession() as session:
-        with pytest.raises(IcaAuthRequired):
-            await Ica(session).lists()
+    with pytest.raises(IcaAuthRequired):
+        await Ica(async_create_clientsession(hass)).lists()
 
 
-async def test_update_row_sends_the_whole_row(aioclient_mock) -> None:
+async def test_update_row_sends_the_whole_row(hass, aioclient_mock) -> None:
     """PUT replaces a row. A body built from only the changed fields is accepted
     and blanks everything else — quantities being the ones people notice."""
     row = {
@@ -82,8 +77,7 @@ async def test_update_row_sends_the_whole_row(aioclient_mock) -> None:
     aioclient_mock.get(INFO, json=_info(1))
     aioclient_mock.put(f"{LISTS_URL}/row/row-1", json=row)
 
-    async with ClientSession() as session:
-        await Ica(session).update_row(row, isStriked=True)
+    await Ica(async_create_clientsession(hass)).update_row(row, isStriked=True)
 
     sent = aioclient_mock.mock_calls[-1][2]
     assert sent["isStriked"] is True
@@ -92,14 +86,13 @@ async def test_update_row_sends_the_whole_row(aioclient_mock) -> None:
     assert sent["text"] == "mjölk"
 
 
-async def test_add_row_lets_ica_classify_the_text(aioclient_mock) -> None:
+async def test_add_row_lets_ica_classify_the_text(hass, aioclient_mock) -> None:
     """`article: null` is accepted and ICA resolves the text itself, so there is
     no article to look up first."""
     aioclient_mock.get(INFO, json=_info(1))
     aioclient_mock.post(f"{LISTS_URL}/list/list-1/row", json={"id": "row-9"})
 
-    async with ClientSession() as session:
-        await Ica(session).add_row("list-1", "bröd")
+    await Ica(async_create_clientsession(hass)).add_row("list-1", "bröd")
 
     sent = aioclient_mock.mock_calls[-1][2]
     assert sent["article"] is None
@@ -107,14 +100,14 @@ async def test_add_row_lets_ica_classify_the_text(aioclient_mock) -> None:
     assert sent["text"] == "bröd"
 
 
-async def test_a_row_without_an_id_never_leaves_the_process(aioclient_mock) -> None:
+async def test_a_row_without_an_id_never_leaves_the_process(hass, aioclient_mock) -> None:
     aioclient_mock.get(INFO, json=_info(1))
-    async with ClientSession() as session:
-        with pytest.raises(IcaError):
-            await Ica(session).update_row({"text": "mjölk"}, isStriked=True)
+    with pytest.raises(IcaError):
+        await Ica(async_create_clientsession(hass)).update_row(
+            {"text": "mjölk"}, isStriked=True)
 
 
-async def test_lists_keeps_the_untouched_rows(aioclient_mock) -> None:
+async def test_lists_keeps_the_untouched_rows(hass, aioclient_mock) -> None:
     aioclient_mock.get(INFO, json=_info(1))
     aioclient_mock.get(f"{LISTS_URL}/list/all", json=[
         {"id": "list-1", "name": "Att handla", "rows": [
@@ -122,8 +115,7 @@ async def test_lists_keeps_the_untouched_rows(aioclient_mock) -> None:
              "quantity": {"amount": 2}, "order": 0},
         ]},
     ])
-    async with ClientSession() as session:
-        lists = await Ica(session).lists()
+    lists = await Ica(async_create_clientsession(hass)).lists()
 
     assert [entry.name for entry in lists] == ["Att handla"]
     assert lists[0].row("row-1")["quantity"] == {"amount": 2}
