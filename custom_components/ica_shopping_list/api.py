@@ -180,6 +180,9 @@ class Ica:
         """
         await self._get(f"{BASE_URL}{LOGIN_PATH}")
 
+        _LOGGER.debug("After the entry point the jar holds: %s",
+                      [m.key for m in self._session.cookie_jar] or "nothing")
+
         form_html = await self._get(f"{IDP_URL}{AUTHENTICATOR_PATH}")
         form = _FormParser()
         form.feed(form_html)
@@ -203,10 +206,11 @@ class Ica:
 
         await self._post(f"{IDP_URL}{grant.action or AUTHORIZE_PATH}", data=grant.fields)
 
-        if not any(m.key == COOKIE_NAME for m in self._session.cookie_jar):
+        held = [m.key for m in self._session.cookie_jar]
+        if COOKIE_NAME not in held:
             raise IcaUnexpectedResponse(
-                "Signed in, but no ICA session cookie was kept. The session this "
-                "was given is not storing cookies."
+                f"Signed in, but no {COOKIE_NAME} was kept. The jar holds: "
+                f"{held or 'nothing'}"
             )
         self._token = self._token_expires = None
 

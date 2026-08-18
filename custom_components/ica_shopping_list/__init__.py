@@ -19,7 +19,8 @@ PLATFORMS = [Platform.TODO]
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # An explicit cookie jar of its own. These cookies *are* the ICA session,
     # and Home Assistant's shared session is shared with everything else.
-    api = Ica(async_create_clientsession(hass, cookie_jar=aiohttp.CookieJar()))
+    api = Ica(async_create_clientsession(
+        hass, cookie_jar=aiohttp.CookieJar(quote_cookie=False)))
     coordinator = IcaCoordinator(hass, entry, api)
     await coordinator.async_restore_session()
 

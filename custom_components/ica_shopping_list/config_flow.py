@@ -7,6 +7,7 @@ like more.
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 import aiohttp
@@ -36,6 +37,8 @@ from .api import (
 )
 from .const import CONF_COOKIES, CONF_LISTS, CONF_SAVE_PASSWORD, DOMAIN
 
+_LOGGER = logging.getLogger(__name__)
+
 CREDENTIALS_SCHEMA = vol.Schema({
     vol.Required(CONF_USERNAME): str,
     vol.Required(CONF_PASSWORD): str,
@@ -57,7 +60,8 @@ async def _sign_in(hass, username: str, password: str) -> tuple[Ica, list[IcaLis
     """Log in and read the lists, so setup fails now rather than later."""
     # An explicit cookie jar. These cookies *are* the session, and Home
     # Assistant's session helper makes no promise about keeping them.
-    session = async_create_clientsession(hass, cookie_jar=aiohttp.CookieJar())
+    session = async_create_clientsession(
+        hass, cookie_jar=aiohttp.CookieJar(quote_cookie=False))
     api = Ica(session)
     await api.login(username, password)
     return api, await api.lists()
@@ -84,9 +88,11 @@ class IcaConfigFlow(ConfigFlow, domain=DOMAIN):
                     self.hass, username, user_input[CONF_PASSWORD])
             except IcaCredentialsRejected:
                 errors["base"] = "invalid_auth"
-            except IcaUnexpectedResponse:
+            except IcaUnexpectedResponse as err:
+                _LOGGER.error("ICA sign-in got an unexpected response: %s", err)
                 errors["base"] = "unexpected_response"
-            except IcaError:
+            except IcaError as err:
+                _LOGGER.error("Could not reach ICA while signing in: %s", err)
                 errors["base"] = "cannot_connect"
             else:
                 await self.async_set_unique_id(username)
@@ -147,9 +153,11 @@ class IcaConfigFlow(ConfigFlow, domain=DOMAIN):
                                         user_input[CONF_PASSWORD])
             except IcaCredentialsRejected:
                 errors["base"] = "invalid_auth"
-            except IcaUnexpectedResponse:
+            except IcaUnexpectedResponse as err:
+                _LOGGER.error("ICA sign-in got an unexpected response: %s", err)
                 errors["base"] = "unexpected_response"
-            except IcaError:
+            except IcaError as err:
+                _LOGGER.error("Could not reach ICA while signing in: %s", err)
                 errors["base"] = "cannot_connect"
             else:
                 data = {CONF_USERNAME: entry.data[CONF_USERNAME],
