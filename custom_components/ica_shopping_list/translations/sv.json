@@ -1,0 +1,51 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Anslut till ICA",
+        "description": "Logga in med samma e-post och lösenord som på ica.se.",
+        "data": {
+          "username": "E-post",
+          "password": "Lösenord",
+          "save_password": "Spara lösenordet"
+        },
+        "data_description": {
+          "save_password": "Låter Home Assistant logga in igen på egen hand när ICA-sessionen tar slut. Utan det får du ange lösenordet varje gång det händer."
+        }
+      },
+      "lists": {
+        "title": "Välj listor",
+        "description": "Varje lista du väljer blir en egen att göra-lista i Home Assistant. Du kan ändra detta senare.",
+        "data": { "lists": "Listor" }
+      },
+      "reauth_confirm": {
+        "title": "Logga in på ICA igen",
+        "description": "ICA-sessionen för {username} har tagit slut.",
+        "data": {
+          "password": "Lösenord",
+          "save_password": "Spara lösenordet"
+        },
+        "data_description": {
+          "save_password": "Sparar du det nu förnyar Home Assistant sessionen själv i stället för att fråga igen."
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "ICA godtog inte e-postadressen och lösenordet.",
+      "cannot_connect": "Kunde inte nå ICA."
+    },
+    "abort": {
+      "already_configured": "Det ICA-kontot är redan tillagt.",
+      "reauth_successful": "Inloggad igen."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Välj listor",
+        "description": "Listor som skapats i ICA sedan installationen dyker upp här. Avmarkerar du en försvinner att göra-listan från Home Assistant, men listan finns kvar hos ICA.",
+        "data": { "lists": "Listor" }
+      }
+    }
+  }
+}

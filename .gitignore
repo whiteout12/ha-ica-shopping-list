@@ -1,0 +1,15 @@
+# Never: this integration handles a live ICA credential.
+.env
+*.har
+state.json
+*.jsonl
+.storage/
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+.DS_Store

@@ -1,0 +1,51 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to ICA",
+        "description": "Sign in with the same email and password you use at ica.se.",
+        "data": {
+          "username": "Email",
+          "password": "Password",
+          "save_password": "Save the password"
+        },
+        "data_description": {
+          "save_password": "Lets Home Assistant sign in again by itself when your ICA session ends. Without it you will be asked for the password each time that happens."
+        }
+      },
+      "lists": {
+        "title": "Choose lists",
+        "description": "Each list you pick becomes its own to-do list in Home Assistant. You can change this later.",
+        "data": { "lists": "Lists" }
+      },
+      "reauth_confirm": {
+        "title": "Sign in to ICA again",
+        "description": "Your ICA session for {username} has ended.",
+        "data": {
+          "password": "Password",
+          "save_password": "Save the password"
+        },
+        "data_description": {
+          "save_password": "Save it this time and Home Assistant will renew the session by itself instead of asking again."
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "ICA did not accept that email and password.",
+      "cannot_connect": "Could not reach ICA."
+    },
+    "abort": {
+      "already_configured": "That ICA account is already set up.",
+      "reauth_successful": "Signed in again."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Choose lists",
+        "description": "Lists created in ICA since setup appear here. Unticking one removes its to-do list from Home Assistant but leaves the list untouched at ICA.",
+        "data": { "lists": "Lists" }
+      }
+    }
+  }
+}
