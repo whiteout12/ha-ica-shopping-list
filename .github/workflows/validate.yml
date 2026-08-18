@@ -24,3 +24,8 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
+          # Brand assets live in home-assistant/brands, which is a submission
+          # with its own review. This is a custom repository and installs fine
+          # without them; drop this line when submitting to the HACS default
+          # store, which is the only thing brands gates.
+          ignore: brands
