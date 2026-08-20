@@ -17,6 +17,16 @@ from .const import CONF_LISTS, DOMAIN
 from .coordinator import IcaCoordinator
 
 
+def _as_ica_shows_it(text: str) -> str:
+    """Capitalise the first character, the way ICA's own site and app do.
+
+    Only the first character: `str.capitalize` would lower the rest and turn
+    "ICA Basic mjölk" into "Ica basic mjölk". Anything that does not start with
+    a letter — "3 äpplen" — is left exactly as it was.
+    """
+    return text[:1].upper() + text[1:]
+
+
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
@@ -81,7 +91,7 @@ class IcaTodoList(CoordinatorEntity[IcaCoordinator], TodoListEntity):
         return [
             TodoItem(
                 uid=row.get("id"),
-                summary=row.get("text") or "",
+                summary=_as_ica_shows_it(row.get("text") or ""),
                 status=(TodoItemStatus.COMPLETED if row.get("isStriked")
                         else TodoItemStatus.NEEDS_ACTION),
             )
