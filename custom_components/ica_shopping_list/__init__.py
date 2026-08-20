@@ -12,11 +12,21 @@ from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from .api import Ica
 from .const import DOMAIN
 from .coordinator import IcaCoordinator
+from .websocket import async_register_commands
 
 PLATFORMS = [Platform.TODO]
 
 
+async def async_setup(hass: HomeAssistant, _config: dict) -> bool:
+    """Register the integration-wide WebSocket commands once."""
+    async_register_commands(hass)
+    return True
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    # Keep direct config-entry setup safe for test harnesses and old reload
+    # paths that did not invoke async_setup first.
+    async_register_commands(hass)
     # An explicit cookie jar of its own. These cookies *are* the ICA session,
     # and Home Assistant's shared session is shared with everything else.
     api = Ica(async_create_clientsession(
@@ -38,7 +48,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unloaded:
-        hass.data[DOMAIN].pop(entry.entry_id, None)
+        coordinator = hass.data[DOMAIN].pop(entry.entry_id, None)
+        if coordinator is not None:
+            await coordinator.suggestions.async_clear()
     return unloaded
 
 

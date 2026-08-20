@@ -1,0 +1,17 @@
+{
+  "isStriked": false,
+  "quantity": {},
+  "text": "långkornigt ris",
+  "article": {
+    "_id": "article-long-rice", "id": 101, "name": "långkornigt ris",
+    "pluralName": "", "alternativeSpelling": "",
+    "productEan": "0000000000101", "storeArticleGroupId": 11,
+    "expandedArticleGroupName": "Ris", "expandedArticleGroupId": 21,
+    "articleGroupName": "Ris", "articleGroupId": 31, "status": 1,
+    "latestChange": "2026-01-01T00:00:00Z",
+    "maxiFormatCategoryId": "", "maxiFormatCategoryName": "",
+    "kvantumFormatCategoryId": "", "kvantumFormatCategoryName": "",
+    "supermarketFormatCategoryId": "", "supermarketFormatCategoryName": "",
+    "naraFormatCategoryId": "", "naraFormatCategoryName": ""
+  }
+}
