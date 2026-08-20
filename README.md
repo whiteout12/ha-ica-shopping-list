@@ -43,6 +43,25 @@ Ticking an item off here leaves the "3" someone typed in the ICA app alone.
 
 **Reordering.** ICA stores a position and it could be supported later.
 
+## ICA article suggestions
+
+Version 0.2.0 provides a narrow, permission-checked autocomplete contract for
+compatible dashboard cards. It returns display text and an opaque five-minute
+selection key only. Selecting a result and explicitly adding it preserves ICA's
+article classification; duplicate product names remain distinct and may show a
+group label. Editing or using ordinary free text still uses Home Assistant's
+standard to-do add operation.
+
+Suggestions and selected adds use the current ICA bearer-token path but never
+silently sign in, renew a session, retry a selected POST, or fall back to a
+free-text add after a selected-add failure. Reauthenticate the integration when
+the card reports that authentication is required. The card's three-character
+search start is a UI policy based on measured `ri`/`ris` behavior, not a claim
+about ICA's server minimum. No ICA article IDs, EANs, categories, or raw search
+documents are exposed to the browser or to to-do entity state. Version `0.2.0`
+is an **unreleased branch target**: one approved live bearer-search verification
+remains a pre-tag release gate and is never run by CI.
+
 ## How it holds a session
 
 Worth knowing if you are wondering why the code is shaped the way it is. All of

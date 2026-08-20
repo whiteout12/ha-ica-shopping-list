@@ -12,6 +12,12 @@ failed a suite in which every test had passed.
 
 from __future__ import annotations
 
+import asyncio
+import json
+from datetime import datetime, timezone
+from pathlib import Path
+from unittest.mock import AsyncMock
+
 import aiohttp
 import pytest
 from aioresponses import aioresponses
@@ -19,14 +25,17 @@ from yarl import URL
 
 from custom_components.ica_shopping_list.api import (
     BASE_URL,
+    ARTICLE_SEARCH_URL,
     LISTS_URL,
     Ica,
     IcaAuthRequired,
     IcaError,
 )
+from custom_components.ica_shopping_list.const import INTEGRATION_VERSION
 
 INFO = f"{BASE_URL}/api/user/information"
 TOKEN = "_0XBPWQQ_11111111-2222-3333-4444-555555555555"
+FIXTURES = Path(__file__).parent / "fixtures"
 
 
 def _info(login_state: int, token: str | None = TOKEN) -> dict:
@@ -158,3 +167,68 @@ async def test_lists_keeps_the_untouched_rows() -> None:
 
     assert [entry.name for entry in lists] == ["Att handla"]
     assert lists[0].row("row-1")["quantity"] == {"amount": 2}
+
+
+async def test_search_uses_bearer_token_and_selected_add_preserves_article() -> None:
+    search = json.loads((FIXTURES / "article_search" / "ris.json").read_text())
+    expected = json.loads((FIXTURES / "add_suggestion" / "request.json").read_text())
+    with aioresponses() as mocked:
+        mocked.get(INFO, payload=_info(1))
+        mocked.get(f"{ARTICLE_SEARCH_URL}?query=ris", payload=search)
+        mocked.post(f"{LISTS_URL}/list/list-1/row", payload={"id": "row-1"})
+        async with aiohttp.ClientSession() as session:
+            api = Ica(session)
+            response = await api.search_articles("ris")
+            await api.add_suggestion("list-1", expected["text"], response["documents"][0])
+        search_request = mocked.requests[("GET", URL(ARTICLE_SEARCH_URL + "?query=ris"))][-1]
+        assert search_request.kwargs["headers"]["Authorization"] == f"Bearer {TOKEN}"
+        assert expected["article"] == search["documents"][0]
+        assert _sent(mocked, "POST", f"{LISTS_URL}/list/list-1/row") == expected
+
+
+async def test_stale_token_mints_once_for_concurrent_callers() -> None:
+    started = asyncio.Event()
+    release = asyncio.Event()
+
+    async def delayed_mint() -> str:
+        started.set()
+        await release.wait()
+        api._token = TOKEN
+        api._token_expires = datetime.max.replace(tzinfo=timezone.utc)
+        return TOKEN
+
+    async with aiohttp.ClientSession() as session:
+        api = Ica(session)
+        api._mint_token = AsyncMock(side_effect=delayed_mint)
+        callers = [asyncio.create_task(api.token()) for _ in range(3)]
+        await started.wait()
+        release.set()
+        assert await asyncio.gather(*callers) == [TOKEN, TOKEN, TOKEN]
+        api._mint_token.assert_awaited_once()
+
+
+async def test_failed_token_mint_releases_lock_for_next_caller() -> None:
+    async with aiohttp.ClientSession() as session:
+        api = Ica(session)
+        api._mint_token = AsyncMock(side_effect=[IcaError("offline"), TOKEN])
+        with pytest.raises(IcaError, match="offline"):
+            await api.token()
+        assert await api.token() == TOKEN
+        assert api._mint_token.await_count == 2
+
+
+async def test_api_errors_use_sanitized_endpoint_labels() -> None:
+    with aioresponses() as mocked:
+        mocked.get(INFO, payload=_info(1))
+        mocked.post(f"{LISTS_URL}/list/list-private/row", status=500)
+        async with aiohttp.ClientSession() as session:
+            with pytest.raises(IcaError, match=r"POST /list/\{list_id\}/row") as error:
+                await Ica(session).add_row("list-private", "ris")
+    assert "list-private" not in str(error.value)
+
+
+def test_manifest_version_matches_websocket_version_source() -> None:
+    manifest = json.loads(
+        (Path(__file__).parents[1] / "custom_components" / "ica_shopping_list" / "manifest.json").read_text()
+    )
+    assert manifest["version"] == INTEGRATION_VERSION

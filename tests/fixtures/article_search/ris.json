@@ -1,0 +1,55 @@
+{
+  "documents": [
+    {
+      "_id": "article-long-rice", "id": 101, "name": "långkornigt ris",
+      "pluralName": "", "alternativeSpelling": "",
+      "productEan": "0000000000101", "storeArticleGroupId": 11,
+      "expandedArticleGroupName": "Ris", "expandedArticleGroupId": 21,
+      "articleGroupName": "Ris", "articleGroupId": 31, "status": 1,
+      "latestChange": "2026-01-01T00:00:00Z",
+      "maxiFormatCategoryId": "", "maxiFormatCategoryName": "",
+      "kvantumFormatCategoryId": "", "kvantumFormatCategoryName": "",
+      "supermarketFormatCategoryId": "", "supermarketFormatCategoryName": "",
+      "naraFormatCategoryId": "", "naraFormatCategoryName": ""
+    },
+    {
+      "_id": "article-vargarda-rice", "id": 102, "name": "Vårgårda ris",
+      "pluralName": "Vårgårda ris", "productEan": "0000000000102",
+      "storeArticleGroupId": 11, "expandedArticleGroupName": "Ris",
+      "expandedArticleGroupId": 21, "articleGroupName": "Ris",
+      "articleGroupId": 31, "status": 1,
+      "latestChange": "2026-01-02T00:00:00Z",
+      "maxiFormatCategoryId": null, "maxiFormatCategoryName": null,
+      "kvantumFormatCategoryId": null, "kvantumFormatCategoryName": null,
+      "supermarketFormatCategoryId": null, "supermarketFormatCategoryName": null,
+      "naraFormatCategoryId": null, "naraFormatCategoryName": null
+    },
+    {
+      "_id": "article-ris-diet", "id": 103, "name": "Ris Diet",
+      "pluralName": "Ris Diet", "productEan": "0000000000103",
+      "storeArticleGroupId": 11, "expandedArticleGroupName": "Ris",
+      "expandedArticleGroupId": 21, "articleGroupName": "Ris",
+      "articleGroupId": 31, "status": 1,
+      "latestChange": "2026-01-03T00:00:00Z"
+    },
+    {
+      "_id": "article-rice-crisp-a", "id": 104, "name": "riscrisp",
+      "pluralName": "riscrisp", "productEan": "0000000000104",
+      "storeArticleGroupId": 12, "expandedArticleGroupName": "Knäckebröd",
+      "expandedArticleGroupId": 22, "articleGroupName": "Knäckebröd",
+      "articleGroupId": 32, "status": 1,
+      "latestChange": "2026-01-04T00:00:00Z"
+    },
+    {
+      "_id": "article-rice-crisp-b", "id": 105, "name": "riscrisp",
+      "pluralName": "riscrisp", "alternativeSpelling": "ris crisp",
+      "productEan": "0000000000105", "storeArticleGroupId": 13,
+      "expandedArticleGroupName": "Mellanmål", "expandedArticleGroupId": 23,
+      "articleGroupName": "Mellanmål", "articleGroupId": 33, "status": 1,
+      "latestChange": "2026-01-05T00:00:00Z"
+    }
+  ],
+  "stats": {"totalHits": 143},
+  "facets": [],
+  "spellSuggestions": []
+}

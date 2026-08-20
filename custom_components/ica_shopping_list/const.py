@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import timedelta
 
 DOMAIN = "ica_shopping_list"
+INTEGRATION_VERSION = "0.2.0"
 
 CONF_LISTS = "lists"
 CONF_SAVE_PASSWORD = "save_password"

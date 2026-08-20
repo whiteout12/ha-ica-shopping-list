@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
@@ -14,6 +15,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .api import Ica, IcaAuthRequired, IcaCredentialsRejected, IcaError, IcaList
 from .const import CONF_COOKIES, DOMAIN, STORAGE_KEY, STORAGE_VERSION, UPDATE_INTERVAL
+from .suggestions import Suggestions
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -37,6 +39,7 @@ class IcaCoordinator(DataUpdateCoordinator[dict[str, IcaList]]):
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=UPDATE_INTERVAL)
         self.entry = entry
         self.api = api
+        self.suggestions = Suggestions(api)
         self._store: Store = Store(hass, STORAGE_VERSION, f"{STORAGE_KEY}.{entry.entry_id}")
 
     # -- session persistence ----------------------------------------------
@@ -133,3 +136,18 @@ class IcaCoordinator(DataUpdateCoordinator[dict[str, IcaList]]):
 
     async def _write_delete(self, row_id: str, **_: Any) -> None:
         await self.api.delete_row(row_id)
+
+    async def async_add_suggestion(
+        self, list_id: str, text: str, article: Mapping[str, str | int | None]
+    ) -> None:
+        """Add a selected article without the normal renew-and-retry ladder."""
+        try:
+            # Exactly one POST. IcaAuthRequired deliberately reaches the caller
+            # so the browser can request Home Assistant reauthentication.
+            await self.api.add_suggestion(list_id, text, dict(article))
+            updated = await self._fetch()
+        except IcaAuthRequired:
+            raise
+        except IcaError as err:
+            raise UpdateFailed(str(err)) from err
+        self.async_set_updated_data(updated)

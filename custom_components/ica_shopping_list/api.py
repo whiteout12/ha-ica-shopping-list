@@ -19,6 +19,7 @@ throwaway soak harness built for the purpose. The three that shape this module:
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from dataclasses import dataclass
@@ -35,6 +36,9 @@ _LOGGER = logging.getLogger(__name__)
 BASE_URL = "https://www.ica.se"
 IDP_URL = "https://ims.icagruppen.se"
 LISTS_URL = "https://apimgw-pub.ica.se/sverige/digx/shopping-list/v1/api"
+ARTICLE_SEARCH_URL = (
+    "https://apimgw-pub.ica.se/sverige/digx/shoppinglistarticlesearch/v1/search"
+)
 
 INFO_PATH = "/api/user/information"
 LOGIN_PATH = "/logga-in/"
@@ -155,6 +159,7 @@ class Ica:
         self._session = session
         self._token: str | None = None
         self._token_expires: datetime | None = None
+        self._token_lock = asyncio.Lock()
 
     # -- session state -----------------------------------------------------
 
@@ -216,10 +221,25 @@ class Ica:
 
     async def token(self) -> str:
         """A usable access token, minting one only when the cached one is stale."""
-        now = datetime.now(timezone.utc)
-        if self._token and self._token_expires and now + TOKEN_SLACK < self._token_expires:
-            return self._token
+        if self._has_fresh_token():
+            return self._token  # type: ignore[return-value]
 
+        # List reads, normal writes, suggestions, and selected adds all share
+        # this lock. A stale token must cause one mint, not one per concurrent
+        # WebSocket request.
+        async with self._token_lock:
+            if self._has_fresh_token():
+                return self._token  # type: ignore[return-value]
+            return await self._mint_token()
+
+    def _has_fresh_token(self) -> bool:
+        return bool(
+            self._token
+            and self._token_expires
+            and datetime.now(timezone.utc) + TOKEN_SLACK < self._token_expires
+        )
+
+    async def _mint_token(self) -> str:
         async with self._session.get(f"{BASE_URL}{INFO_PATH}",
                                      headers={"Accept": "application/json"},
                                      timeout=REQUEST_TIMEOUT) as response:
@@ -258,6 +278,30 @@ class Ica:
         return await self._api("POST", f"/list/{list_id}/row", json={
             "isStriked": False, "quantity": {}, "text": text, "article": None})
 
+    async def search_articles(self, query: str) -> Any:
+        """Search ICA's article index using the current session token.
+
+        The browser HAR omitted Authorization even on its authenticated row
+        POST while its preflight requested it. Search therefore deliberately
+        uses the same bearer path as all other ICA API calls. This method never
+        logs in or retries an authentication failure.
+        """
+        return await self._authenticated_request(
+            "GET", ARTICLE_SEARCH_URL, endpoint="/article-search", params={"query": query}
+        )
+
+    async def add_suggestion(
+        self, list_id: str, text: str, article: dict[str, Any]
+    ) -> dict[str, Any] | None:
+        """Add one server-held search result exactly once.
+
+        The article is intentionally not reconstructed here: the selection
+        store has already validated and retained ICA's measured document.
+        """
+        return await self._api("POST", f"/list/{list_id}/row", json={
+            "isStriked": False, "quantity": {}, "text": text, "article": article,
+        })
+
     async def update_row(self, row: dict[str, Any], **changes: Any) -> dict[str, Any]:
         """Replace a row, changing only what was asked for.
 
@@ -275,10 +319,17 @@ class Ica:
     # -- plumbing ----------------------------------------------------------
 
     async def _api(self, method: str, path: str, **kw: Any) -> Any:
+        return await self._authenticated_request(
+            method, f"{LISTS_URL}{path}", endpoint=_endpoint_label(path), **kw
+        )
+
+    async def _authenticated_request(
+        self, method: str, url: str, *, endpoint: str, **kw: Any
+    ) -> Any:
         token = await self.token()
         try:
             async with self._session.request(
-                method, f"{LISTS_URL}{path}",
+                method, url,
                 headers={"Authorization": f"Bearer {token}",
                          "Accept": "application/json"},
                 timeout=REQUEST_TIMEOUT, **kw,
@@ -288,7 +339,9 @@ class Ica:
                     self._token = None
                     raise IcaAuthRequired(f"ICA refused the token (HTTP {response.status})")
                 if response.status >= 400:
-                    raise IcaError(f"ICA answered HTTP {response.status} for {method} {path}")
+                    raise IcaError(
+                        f"ICA answered HTTP {response.status} for {method} {endpoint}"
+                    )
                 # Read the body rather than trusting Content-Length: it is
                 # absent on a chunked response, and a DELETE answers 200 with
                 # nothing at all, which is a success and not a parse failure.
@@ -299,10 +352,10 @@ class Ica:
                     return json.loads(body)
                 except ValueError as err:
                     raise IcaUnexpectedResponse(
-                        f"ICA answered {method} {path} with something that is not "
+                        f"ICA answered {method} {endpoint} with something that is not "
                         f"JSON") from err
         except aiohttp.ClientError as err:
-            raise IcaError(f"Could not reach ICA: {err}") from err
+            raise IcaError(f"Could not reach ICA {endpoint}: {err}") from err
 
     async def _get(self, url: str) -> str:
         try:
@@ -318,6 +371,17 @@ class Ica:
                 return await response.text()
         except aiohttp.ClientError as err:
             raise IcaError(f"Could not reach {url}: {err}") from err
+
+
+def _endpoint_label(path: str) -> str:
+    """Describe an ICA endpoint without including list or row identifiers."""
+    if path == "/list/all":
+        return path
+    if path.startswith("/list/"):
+        return "/list/{list_id}/row"
+    if path.startswith("/row/"):
+        return "/row/{row_id}"
+    return "/shopping-list"
 
 
 def _parse_time(value: Any) -> datetime | None:
